@@ -8,6 +8,11 @@ from sazonalidade import gerar_grafico_sazonal
 st.set_page_config(page_title="Controle de Temperatura e Umidade", layout="wide")
 st.title("🌡️💧 Monitoramento Inteligente - Estoque Seco")
 
+# Configurable temperature thresholds for alerts.
+# The upper threshold was set to 25°C based on recent storage guidelines (previously 22°C).
+TEMP_MIN_THRESHOLD = 5
+TEMP_MAX_THRESHOLD = 25
+
 # 🔧 Padronização de colunas
 def padronizar_colunas(df):
     colunas_limpa = []
@@ -54,15 +59,15 @@ df.dropna(subset=['umidade'], inplace=True)
 
 # 🔔 Alertas
 def alerta_temp(temp):
-    if temp < 5:
+    if temp < TEMP_MIN_THRESHOLD:
         return "⚠️ Baixa"
-    elif temp > 22:
+    elif temp > TEMP_MAX_THRESHOLD:
         return "⚠️ Alta"
     else:
         return "✅ Ideal"
 
 def alerta_umid(umid):
-    return "✅ Ideal" if umid >= 70 else "⚠️ Inadequada"
+    return "✅ Ideal" if umid <= 70 else "⚠️ Inadequada"
 
 df['alerta_temp'] = df['temperatura'].apply(alerta_temp)
 df['alerta_umid'] = df['umidade'].apply(alerta_umid)
