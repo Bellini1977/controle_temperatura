@@ -1,4 +1,4 @@
-# Interaçao com o streamlit
+## Interaçao com o streamlit
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -9,7 +9,6 @@ st.set_page_config(page_title="Controle de Temperatura e Umidade", layout="wide"
 st.title("🌡️💧 Monitoramento Inteligente - Estoque Seco")
 
 # Configurable temperature thresholds for alerts.
-# The upper threshold was set to 25°C based on recent storage guidelines (previously 22°C).
 TEMP_MIN_THRESHOLD = 5
 TEMP_MAX_THRESHOLD = 25
 
@@ -38,6 +37,7 @@ def padronizar_colunas(df):
 # 📥 Leitura do CSV
 try:
     df = pd.read_csv("dados/temperatura.csv", sep=";", encoding="latin1", skiprows=1)
+    df = df.applymap(lambda x: str(x).replace(",", ".") if isinstance(x, str) else x)
 except Exception as e:
     st.error("❌ Erro ao ler o arquivo CSV.")
     st.write(str(e))
@@ -89,12 +89,12 @@ st.write("📊 Total de registros filtrados:", len(df_filtrado))
 st.subheader("📋 Tabela de Registros Filtrados")
 st.dataframe(df_filtrado[['data', 'temperatura', 'umidade']].sort_values('data'))
 
-# 📈 Gráfico de temperatura por registro
+# 📈 Gráfico de temperatura por registro (corrigido para linha contínua)
 st.subheader("🌡️ Temperatura por Registro")
 if not df_filtrado.empty:
-    fig_temp = px.scatter(df_filtrado, x='data', y='temperatura', color='alerta_temp',
-                          title='Temperatura por Registro', labels={'data': 'Data', 'temperatura': 'Temperatura (°C)'})
-    fig_temp.update_traces(mode='markers+lines')
+    fig_temp = px.line(df_filtrado, x='data', y='temperatura', color='alerta_temp',
+                       title='Temperatura ao Longo do Tempo',
+                       labels={'data': 'Data', 'temperatura': 'Temperatura (°C)'})
     fig_temp.update_xaxes(tickformat="%d %b %Hh")
     st.plotly_chart(fig_temp, use_container_width=True)
 else:
