@@ -2,7 +2,7 @@
 from sklearn.ensemble import RandomForestRegressor
 import pandas as pd
 
-# 🔮 Previsão de temperatura
+# Previsão de temperatura
 def prever_temperatura(df, dias):
     if 'data' not in df.columns or 'temperatura' not in df.columns:
         raise ValueError("Colunas 'data' e 'temperatura' são obrigatórias.")
@@ -20,7 +20,7 @@ def prever_temperatura(df, dias):
 
     return pd.Series(previsoes, index=datas_futuras)
 
-# 🔮 Previsão de umidade
+# Previsão de umidade
 def prever_umidade(df, dias):
     if 'data' not in df.columns or 'umidade' not in df.columns:
         raise ValueError("Colunas 'data' e 'umidade' são obrigatórias.")

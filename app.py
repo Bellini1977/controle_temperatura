@@ -1,4 +1,5 @@
 ## Interaçao com o streamlit
+# Interaçao com o streamlit
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -8,11 +9,10 @@ from sazonalidade import gerar_grafico_sazonal
 st.set_page_config(page_title="Controle de Temperatura e Umidade", layout="wide")
 st.title("🌡️💧 Monitoramento Inteligente - Estoque Seco")
 
-# Configurable temperature thresholds for alerts.
 TEMP_MIN_THRESHOLD = 5
 TEMP_MAX_THRESHOLD = 25
 
-# 🔧 Padronização de colunas
+# Padronização de colunas
 def padronizar_colunas(df):
     colunas_limpa = []
     for col in df.columns:
@@ -34,7 +34,7 @@ def padronizar_colunas(df):
             df.rename(columns={col: "vpd"}, inplace=True)
     return df
 
-# 📥 Leitura do CSV
+# Leitura do CSV
 try:
     df = pd.read_csv("dados/temperatura.csv", sep=";", encoding="latin1", skiprows=1)
     df = df.applymap(lambda x: str(x).replace(",", ".") if isinstance(x, str) else x)
@@ -45,19 +45,19 @@ except Exception as e:
 
 df = padronizar_colunas(df)
 
-# 🗓️ Conversão de data
+# Conversão de data
 df['data'] = pd.to_datetime(df['data'], errors='coerce')
 df.dropna(subset=['data'], inplace=True)
 
-# 🌡️ Conversão de temperatura
+# Conversão de temperatura
 df['temperatura'] = pd.to_numeric(df.get('temperatura'), errors='coerce')
 df.dropna(subset=['temperatura'], inplace=True)
 
-# 💧 Conversão de umidade
+# Conversão de umidade
 df['umidade'] = pd.to_numeric(df.get('umidade'), errors='coerce')
 df.dropna(subset=['umidade'], inplace=True)
 
-# 🔔 Alertas
+# Alertas
 def alerta_temp(temp):
     if temp < TEMP_MIN_THRESHOLD:
         return "⚠️ Baixa"
@@ -72,7 +72,7 @@ def alerta_umid(umid):
 df['alerta_temp'] = df['temperatura'].apply(alerta_temp)
 df['alerta_umid'] = df['umidade'].apply(alerta_umid)
 
-# 📅 Filtros de data com dia final completo
+# Filtros de data com dia final completo
 col1, col2 = st.columns(2)
 inicio = col1.date_input("Data inicial", df['data'].min().date())
 fim = col2.date_input("Data final", df['data'].max().date())
@@ -85,22 +85,29 @@ df_filtrado = df[(df['data'] >= inicio_dt) & (df['data'] <= fim_dt)]
 st.write("🔎 Intervalo selecionado:", inicio_dt, "→", fim_dt)
 st.write("📊 Total de registros filtrados:", len(df_filtrado))
 
-# 📋 Tabela interativa dos dados filtrados
+# Dia mais quente e mais úmido
+if not df_filtrado.empty:
+    dia_quente = df_filtrado.loc[df_filtrado['temperatura'].idxmax()]['data'].strftime('%d/%m/%Y %H:%M')
+    dia_umido = df_filtrado.loc[df_filtrado['umidade'].idxmax()]['data'].strftime('%d/%m/%Y %H:%M')
+    st.markdown(f"🔥 **Dia mais quente:** {dia_quente}")
+    st.markdown(f"💧 **Dia mais úmido:** {dia_umido}")
+
+# Tabela interativa dos dados filtrados
 st.subheader("📋 Tabela de Registros Filtrados")
 st.dataframe(df_filtrado[['data', 'temperatura', 'umidade']].sort_values('data'))
 
-# 📈 Gráfico de temperatura por registro (corrigido para linha contínua)
+# Gráfico de temperatura por registro (com pontos e linhas)
 st.subheader("🌡️ Temperatura por Registro")
 if not df_filtrado.empty:
-    fig_temp = px.line(df_filtrado, x='data', y='temperatura', color='alerta_temp',
-                       title='Temperatura ao Longo do Tempo',
-                       labels={'data': 'Data', 'temperatura': 'Temperatura (°C)'})
+    fig_temp = px.scatter(df_filtrado, x='data', y='temperatura', color='alerta_temp',
+                          title='Temperatura por Registro', labels={'data': 'Data', 'temperatura': 'Temperatura (°C)'})
+    fig_temp.update_traces(mode='markers+lines')
     fig_temp.update_xaxes(tickformat="%d %b %Hh")
     st.plotly_chart(fig_temp, use_container_width=True)
 else:
     st.warning("Nenhum dado de temperatura disponível para o intervalo selecionado.")
 
-# 📈 Gráfico de umidade por registro
+# Gráfico de umidade por registro
 st.subheader("💧 Umidade por Registro")
 if not df_filtrado.empty:
     fig_umid = px.scatter(df_filtrado, x='data', y='umidade', color='alerta_umid',
@@ -111,18 +118,18 @@ if not df_filtrado.empty:
 else:
     st.warning("Nenhum dado de umidade disponível para o intervalo selecionado.")
 
-# 🔮 Previsão de temperatura
+# Previsão de temperatura
 st.subheader("🔮 Previsão de Temperatura")
 dias = st.slider("Dias à frente", 1, 30, 7)
 previsao_temp = prever_temperatura(df, dias)
 st.line_chart(previsao_temp)
 
-# 🔮 Previsão de Umidade
+# Previsão de Umidade
 st.subheader("🔮 Previsão de Umidade")
 previsao_umid = prever_umidade(df, dias)
 st.line_chart(previsao_umid)
 
-# 📊 Análise sazonal
+# Análise sazonal
 st.subheader("📈 Análise Sazonal")
 figs_sazonal = gerar_grafico_sazonal(df)
 for fig in figs_sazonal:
