@@ -1,5 +1,6 @@
 ## Interaçao com o streamlit
 # Interaçao com o streamlit
+import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -96,16 +97,52 @@ if not df_filtrado.empty:
 st.subheader("📋 Tabela de Registros Filtrados")
 st.dataframe(df_filtrado[['data', 'temperatura', 'umidade']].sort_values('data'))
 
-# Gráfico de temperatura por registro (com pontos e linhas)
+# Gráfico de temperatura por registro (linha única com cores diferentes)
 st.subheader("🌡️ Temperatura por Registro")
 if not df_filtrado.empty:
-    fig_temp = px.scatter(df_filtrado, x='data', y='temperatura', color='alerta_temp',
-                          title='Temperatura por Registro', labels={'data': 'Data', 'temperatura': 'Temperatura (°C)'})
-    fig_temp.update_traces(mode='markers+lines')
-    fig_temp.update_xaxes(tickformat="%d %b %Hh")
+    # Dicionário de cores
+    cores = {
+        "⚠️ Alta": "red",
+        "⚠️ Baixa": "blue",
+        "✅ Ideal": "green"
+    }
+
+    fig_temp = go.Figure()
+
+    # Adiciona a linha contínua (sem categorias)
+    fig_temp.add_trace(go.Scatter(
+        x=df_filtrado["data"],
+        y=df_filtrado["temperatura"],
+        mode="lines",
+        line=dict(color="lightgray", width=2),
+        name="Temperatura"
+    ))
+
+    # Adiciona os pontos coloridos pela categoria
+    for alerta, cor in cores.items():
+        df_temp = df_filtrado[df_filtrado["alerta_temp"] == alerta]
+        fig_temp.add_trace(go.Scatter(
+            x=df_temp["data"],
+            y=df_temp["temperatura"],
+            mode="markers",
+            marker=dict(color=cor, size=8),
+            name=alerta,
+            hovertemplate="Data: %{x}<br>Temp: %{y}°C<br>Status: " + alerta
+        ))
+
+    fig_temp.update_layout(
+        title="Temperatura por Registro",
+        xaxis_title="Data",
+        yaxis_title="Temperatura (°C)",
+        xaxis=dict(tickformat="%d %b %Hh"),
+        legend=dict(title="Legenda")
+    )
+
     st.plotly_chart(fig_temp, use_container_width=True)
 else:
     st.warning("Nenhum dado de temperatura disponível para o intervalo selecionado.")
+
+
 
 # Gráfico de umidade por registro
 st.subheader("💧 Umidade por Registro")
