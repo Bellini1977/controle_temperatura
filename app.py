@@ -142,15 +142,47 @@ if not df_filtrado.empty:
 else:
     st.warning("Nenhum dado de temperatura disponível para o intervalo selecionado.")
 
-
-
-# Gráfico de umidade por registro
+# Gráfico de umidade por registro (linha única com cores por alerta)
 st.subheader("💧 Umidade por Registro")
 if not df_filtrado.empty:
-    fig_umid = px.scatter(df_filtrado, x='data', y='umidade', color='alerta_umid',
-                          title='Umidade por Registro', labels={'data': 'Data', 'umidade': 'Umidade (%)'})
-    fig_umid.update_traces(mode='markers+lines')
-    fig_umid.update_xaxes(tickformat="%d %b %Hh")
+    fig_umid = go.Figure()
+
+    # Linha contínua (cinza claro de fundo)
+    fig_umid.add_trace(go.Scatter(
+        x=df_filtrado["data"],
+        y=df_filtrado["umidade"],
+        mode="lines",
+        line=dict(color="lightgray", width=2),
+        name="Umidade"
+    ))
+
+    # Mapeamento de cores
+    cores = {
+        "✅ Ideal": "lightblue",
+        "⚠️ Inadequada": "yellow"
+    }
+
+    # Adiciona pontos por categoria
+    for alerta, cor in cores.items():
+        df_umid = df_filtrado[df_filtrado["alerta_umid"] == alerta]
+        fig_umid.add_trace(go.Scatter(
+            x=df_umid["data"],
+            y=df_umid["umidade"],
+            mode="markers",
+            marker=dict(color=cor, size=8, line=dict(color="black", width=1)),
+            name=alerta,
+            hovertemplate="Data: %{x}<br>Umidade: %{y}%<br>Status: " + alerta
+        ))
+
+    # Layout
+    fig_umid.update_layout(
+        title="Umidade por Registro",
+        xaxis_title="Data",
+        yaxis_title="Umidade (%)",
+        xaxis=dict(tickformat="%d %b %Hh"),
+        legend=dict(title="Legenda")
+    )
+
     st.plotly_chart(fig_umid, use_container_width=True)
 else:
     st.warning("Nenhum dado de umidade disponível para o intervalo selecionado.")
